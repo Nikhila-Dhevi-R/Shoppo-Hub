@@ -27,6 +27,7 @@ pnpm-debug.log*
 
 dist/
 build/
+_site/
 
 # ==========================
 # Coverage
@@ -40,6 +41,7 @@ coverage/
 
 server/uploads/
 server/*.sqlite3
+*.sqlite3
 __pycache__/
 *.py[cod]
 

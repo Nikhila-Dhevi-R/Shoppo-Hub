@@ -1,37 +1,37 @@
 # ShopHub
 
-ShopHub is a small e-commerce demo built with HTML, CSS, vanilla JavaScript, and a Flask backend. Product browsing, cart, and wishlist interactions run in the browser. Flask serves the storefront and handles account sessions and order persistence.
+ShopHub is a responsive storefront demo with a warm peach, yellow, and orange glassmorphism theme. It is a static site built with HTML, CSS, and vanilla JavaScript, so it can run on GitHub Pages without a separate application server.
 
 ## Features
 
-- Responsive storefront with product search and category filtering
-- Expanded Fashion collection with graphic tees, sneakers, and loafers
-- Electronics & Gadgets collection with wireless earbuds, wired earphones, and mice
-- Local cart and wishlist
-- SQLite-backed signup, login, and account sessions
-- Checkout requires a signed-in account and collects delivery name, address, and phone number
-- Server-calculated order totals and account order history
-- Warm peach, yellow, and orange glassmorphism theme with motion effects
+- Search and filter the Fashion and Electronics & Gadgets collections
+- Product photos sized to fit their cards, with hover transitions
+- Browser-local cart and saved finds
+- Demo sign-up and login for profiles stored in this browser
+- Delivery form, local order confirmation, and per-profile order history
+- Responsive layout with glass panels and motion effects
 
-## Run locally on Windows
+## Run locally
 
-From the project root in PowerShell:
+Install Node.js 24 or newer. From the repository root, run these commands in PowerShell:
 
 ```powershell
-py -3 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r server/requirements.txt
-python -m server.app
+node --version
+node --test tests/shop-store.test.cjs tests/build-pages.test.cjs
+node scripts/build-pages.mjs
+node scripts/serve-static.mjs
 ```
 
-Open <http://127.0.0.1:5000>. The Python server creates `server/shophub.sqlite3` when it initializes the account and order database. This local database stores password hashes, order items, and customer delivery details; the SQLite file is ignored by Git. Cart and wishlist items stay in browser localStorage. A checkout draft is kept in the current tab while a shopper signs in or retries an order.
+Open <http://127.0.0.1:8000>. The preview server serves only the generated `_site` folder and has no application API.
 
-Orders require a signed-in account. Checkout retries reuse a request key tied to the order details so a lost response does not create a second order. Changed details require an explicit new-order attempt. This demo does not process payments.
+## Deploy on GitHub Pages
 
-## Deploy the full app on Render
+The `Client-side-js-only` branch builds and deploys the storefront through the GitHub Actions workflow in `.github/workflows/pages.yml`. For the first deployment, open **Settings → Pages** in the repository and select **GitHub Actions** as the build and deployment source. Pushes to that branch run the workflow; the deployment URL appears in the workflow's `github-pages` environment.
 
-The repository includes a `render.yaml` Blueprint for deploying the Flask app and storefront together. In Render, create a new Blueprint Instance, connect this repository, and select the `render.yaml` file. Render will build the app, start Gunicorn, and check `/api/health` after deployment. The deployed service serves both the website and its `/api/...` endpoints from the same origin.
+The expected project URL is <https://nikhila-dhevi-r.github.io/Shoppo-Hub/>.
 
-The Blueprint attaches a 1 GB persistent disk and stores the SQLite database at `/var/data/shophub.sqlite3`, preserving accounts and orders across restarts and deploys. Persistent storage requires a paid Render service plan and may incur charges; review the plan and price in Render before creating the service. The app is configured to set secure session cookies over HTTPS.
+## Demo data and privacy
 
-GitHub stores the source code, but GitHub Pages cannot run the Flask backend. Publishing this full-stack app through Pages alone would leave sign-in and checkout unavailable.
+Profiles and orders are stored in this browser only. They do not sync across browsers or devices, and they are not connected to the previous local SQLite data. Passwords are stored as salted PBKDF2 hashes, but this browser-only login is not server-secure: people with access to this browser can inspect or change its data and the JavaScript catalog.
+
+Use sample information only. Do not reuse a real password or enter a real delivery address or phone number. ShopHub does not process payments, verify inventory, or send orders to a merchant. Order confirmation is a local demo record, not an accepted purchase.
