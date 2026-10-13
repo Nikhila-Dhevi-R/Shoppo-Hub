@@ -3,7 +3,7 @@ name: Publish ShopHub to GitHub Pages
 on:
   push:
     branches:
-      - Client-side-js-only
+      - main
   workflow_dispatch:
 
 concurrency:
