@@ -11,14 +11,14 @@
 
     async function loadProfile() {
         try {
-            const response = await window.shopApi.request("/api/auth/me");
-            if (username) username.textContent = response.user.name;
-            if (email) email.textContent = response.user.email;
-        } catch (error) {
-            if (error.status === 401) {
+            const user = await window.shopStore.currentUser();
+            if (!user) {
                 window.location.replace("login.html?next=profile.html");
                 return;
             }
+            if (username) username.textContent = user.name;
+            if (email) email.textContent = user.email;
+        } catch (error) {
             showError(error.message || "Your profile could not be loaded.");
         }
     }
@@ -34,7 +34,7 @@
         logoutButton.addEventListener("click", async () => {
             logoutButton.disabled = true;
             try {
-                await window.shopApi.request("/api/auth/logout", { method: "POST" });
+                window.shopStore.logout();
             } catch (error) {
                 showError(error.message || "We could not sign you out.");
                 logoutButton.disabled = false;

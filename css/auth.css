@@ -5,6 +5,7 @@
 .form-box { width: 100%; padding: clamp(24px, 6vw, 42px); border-radius: 30px; animation: rise-in .65s cubic-bezier(.2,.7,.2,1) both; }
 .form-box h1 { margin: 0; color: var(--ink); font: 800 clamp(1.9rem, 7vw, 2.55rem)/1.1 'Manrope', sans-serif; letter-spacing: -.06em; }
 .auth-intro { margin: 9px 0 24px; color: var(--ink-soft); }
+.auth-demo-note { margin: -12px 0 20px; padding: 11px 13px; border: 1px solid rgba(179, 105, 52, .18); border-radius: 14px; background: rgba(255, 247, 235, .78); color: #76533d; font-size: .88rem; line-height: 1.5; }
 .form-box form { display: grid; gap: 9px; }
 .form-box form label:not(:first-child) { margin-top: 5px; }
 .auth-submit { width: 100%; margin-top: 4px; }

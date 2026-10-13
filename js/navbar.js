@@ -96,7 +96,7 @@
             logoutBtn.addEventListener("click", async () => {
                 logoutBtn.disabled = true;
                 try {
-                    await window.shopApi.request("/api/auth/logout", { method: "POST" });
+                    window.shopStore.logout();
                 } catch (error) {
                     let status = document.getElementById("navStatus");
                     if (!status && dropdown) {
@@ -133,8 +133,7 @@
 
     async function refreshSession() {
         try {
-            const response = await window.shopApi.request("/api/auth/me");
-            setSignedInUser(response.user);
+            setSignedInUser(await window.shopStore.currentUser());
         } catch (_error) {
             setSignedInUser(null);
         }
@@ -157,7 +156,10 @@
     }
 
     window.updateShopCounts = updateCounts;
-    window.addEventListener("storage", updateCounts);
+    window.addEventListener("storage", () => {
+        updateCounts();
+        refreshSession();
+    });
     if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", initialize, { once: true });
     } else {

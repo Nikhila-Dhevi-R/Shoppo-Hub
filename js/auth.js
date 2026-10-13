@@ -35,10 +35,7 @@
                 const name = document.getElementById("signupName").value.trim();
                 const email = document.getElementById("signupEmail").value.trim();
                 const password = document.getElementById("signupPassword").value;
-                await window.shopApi.request("/api/auth/register", {
-                    method: "POST",
-                    body: { name, email, password }
-                });
+                await window.shopStore.register({ name, email, password });
                 window.location.assign(addNextToUrl("login.html", { created: "1" }));
             } catch (error) {
                 setStatus(status, error.message || "We could not create your account.");
@@ -66,10 +63,7 @@
             try {
                 const email = document.getElementById("loginEmail").value.trim();
                 const password = document.getElementById("loginPassword").value;
-                await window.shopApi.request("/api/auth/login", {
-                    method: "POST",
-                    body: { email, password }
-                });
+                await window.shopStore.login({ email, password });
                 window.location.assign(safeNext || "index.html");
             } catch (error) {
                 setStatus(status, error.message || "We could not sign you in.");
