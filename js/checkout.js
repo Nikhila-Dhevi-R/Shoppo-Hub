@@ -8,9 +8,12 @@
     const successPanel = document.getElementById("orderSuccess");
     const emptyCartLink = document.getElementById("checkoutEmptyLink");
     const summaryPanel = document.getElementById("checkoutSummary");
-    const draftKey = "shophub.checkout.delivery.v1";
+    const draftKeyPrefix = "shophub.checkout.delivery.v1";
     if (!catalog || !form || !checkoutView || !successPanel) return;
     let activeRequestKey = null;
+    let activeDraftKey = null;
+    let activeRequestStorageKey = null;
+    let activeProfileId = null;
 
     const fields = {
         name: document.getElementById("deliveryName"),
@@ -27,19 +30,21 @@
     }
 
     function saveDraft() {
+        if (!activeDraftKey) return;
         const draft = Object.fromEntries(Object.entries(fields).map(([key, input]) => [key, input.value]));
         try {
             if (Object.values(draft).every((value) => !value.trim())) {
-                sessionStorage.removeItem(draftKey);
+                sessionStorage.removeItem(activeDraftKey);
                 return;
             }
-            sessionStorage.setItem(draftKey, JSON.stringify(draft));
+            sessionStorage.setItem(activeDraftKey, JSON.stringify(draft));
         } catch (_error) { /* Keep the active form usable if browser storage is unavailable. */ }
     }
 
     function restoreDraft() {
+        if (!activeDraftKey) return false;
         try {
-            const draft = JSON.parse(sessionStorage.getItem(draftKey) || "null");
+            const draft = JSON.parse(sessionStorage.getItem(activeDraftKey) || "null");
             if (!draft || typeof draft !== "object") return false;
             Object.keys(fields).forEach((key) => {
                 if (typeof draft[key] === "string") fields[key].value = draft[key];
@@ -57,15 +62,20 @@
     }
 
     function createRequestKey() {
-        if (window.crypto && typeof window.crypto.randomUUID === "function") {
-            return window.crypto.randomUUID();
+        try {
+            if (window.crypto && typeof window.crypto.randomUUID === "function") {
+                return window.crypto.randomUUID();
+            }
+            if (!window.crypto || typeof window.crypto.getRandomValues !== "function") throw new Error("Web Crypto unavailable");
+            const bytes = new Uint8Array(16);
+            window.crypto.getRandomValues(bytes);
+            bytes[6] = (bytes[6] & 0x0f) | 0x40;
+            bytes[8] = (bytes[8] & 0x3f) | 0x80;
+            const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+            return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+        } catch (_error) {
+            throw new Error("Secure checkout is unavailable in this browser. Try again from a secure connection.");
         }
-        const bytes = new Uint8Array(16);
-        window.crypto.getRandomValues(bytes);
-        bytes[6] = (bytes[6] & 0x0f) | 0x40;
-        bytes[8] = (bytes[8] & 0x3f) | 0x80;
-        const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
-        return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
     }
 
     function checkoutRequestKey() {
@@ -107,6 +117,7 @@
     }
 
     async function initialize() {
+        submitButton.disabled = true;
         const items = orderItems();
         renderSummary(items);
         if (!items.length) {
@@ -117,17 +128,21 @@
             return;
         }
 
-        const hadDraft = restoreDraft();
         try {
-            const response = await window.shopApi.request("/api/auth/me");
-            if (!hadDraft && response.user && response.user.name) fields.name.value = response.user.name;
-        } catch (error) {
-            if (error.status === 401) {
-                saveDraft();
+            const user = await window.shopStore.currentUser();
+            if (!user) {
                 window.location.replace("login.html?next=checkout.html");
                 return;
             }
+            activeProfileId = user.id;
+            activeDraftKey = `${draftKeyPrefix}.${activeProfileId}`;
+            activeRequestStorageKey = catalog.checkoutKeyName;
+            const hadDraft = restoreDraft();
+            if (!hadDraft && user.name) fields.name.value = user.name;
+            submitButton.disabled = false;
+        } catch (error) {
             setStatus(error.message || "We could not check your account. Please try again.");
+            submitButton.disabled = false;
         }
     }
 
@@ -136,7 +151,7 @@
     if (newOrderAttemptButton) {
         newOrderAttemptButton.addEventListener("click", () => {
             activeRequestKey = null;
-            try { sessionStorage.removeItem(catalog.checkoutKeyName); } catch (_error) { /* Start the new attempt in memory. */ }
+            try { sessionStorage.removeItem(activeRequestStorageKey); } catch (_error) { /* Start the new attempt in memory. */ }
             newOrderAttemptButton.hidden = true;
             submitButton.disabled = false;
             setStatus("Ready to place a separate order using these details.", "pending");
@@ -154,30 +169,31 @@
         }
 
         saveDraft();
+        if (!activeProfileId) {
+            setStatus("Please sign in before placing your order.");
+            return;
+        }
         submitButton.disabled = true;
         setStatus("Saving your order…", "pending");
-        const requestKey = checkoutRequestKey();
         let response;
         try {
-            response = await window.shopApi.request("/api/orders", {
-                method: "POST",
-                headers: { "Idempotency-Key": requestKey },
-                body: {
-                    items,
-                    delivery: {
-                        name: fields.name.value.trim(),
-                        address: fields.address.value.trim(),
-                        phone: fields.phone.value.trim()
-                    }
-                }
-            });
+            const requestKey = checkoutRequestKey();
+            response = await window.shopStore.placeOrder({
+                items,
+                delivery: {
+                    name: fields.name.value.trim(),
+                    address: fields.address.value.trim(),
+                    phone: fields.phone.value.trim()
+                },
+                attemptKey: requestKey
+            }, catalog.products);
         } catch (error) {
-            if (error.status === 401) {
+            if (error.code === "AUTH_REQUIRED") {
                 saveDraft();
                 window.location.assign("login.html?next=checkout.html");
                 return;
             }
-            if (error.status === 409 && newOrderAttemptButton) {
+            if (error.code === "ATTEMPT_CONFLICT" && newOrderAttemptButton) {
                 setStatus(error.message || "This checkout attempt already saved different details.");
                 newOrderAttemptButton.hidden = false;
                 submitButton.disabled = true;
@@ -190,8 +206,12 @@
         }
 
         try { localStorage.removeItem("cart"); } catch (_error) { /* The order is saved, so still show its confirmation. */ }
-        try { sessionStorage.removeItem(draftKey); } catch (_error) { /* The order is already saved. */ }
-        try { sessionStorage.removeItem(catalog.checkoutKeyName); } catch (_error) { /* The order is already saved. */ }
+        if (activeDraftKey) {
+            try { sessionStorage.removeItem(activeDraftKey); } catch (_error) { /* The order is already saved. */ }
+        }
+        if (activeRequestStorageKey) {
+            try { sessionStorage.removeItem(activeRequestStorageKey); } catch (_error) { /* The order is already saved. */ }
+        }
         activeRequestKey = null;
         if (window.updateShopCounts) window.updateShopCounts();
         document.getElementById("orderReference").textContent = response.reference;

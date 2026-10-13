@@ -57,7 +57,7 @@
                 const name = document.createElement("span");
                 name.textContent = `${item.quantity} × ${item.name}`;
                 const amount = document.createElement("strong");
-                amount.textContent = window.shopCatalog.formatPrice(item.unit_price * item.quantity);
+                amount.textContent = window.shopCatalog.formatPrice(item.price * item.quantity);
                 line.append(name, amount);
                 itemList.appendChild(line);
             });
@@ -68,15 +68,20 @@
 
     async function loadOrders() {
         try {
-            const response = await window.shopApi.request("/api/orders");
+            const user = await window.shopStore.currentUser();
+            if (!user) {
+                window.location.replace("login.html?next=orders.html");
+                return;
+            }
+            const orders = await window.shopStore.listOrders();
             status.textContent = "";
-            if (!response.orders || response.orders.length === 0) {
+            if (orders.length === 0) {
                 renderEmpty();
                 return;
             }
-            renderOrders(response.orders);
+            renderOrders(orders.slice().reverse());
         } catch (error) {
-            if (error.status === 401) {
+            if (error.code === "AUTH_REQUIRED") {
                 window.location.replace("login.html?next=orders.html");
                 return;
             }
