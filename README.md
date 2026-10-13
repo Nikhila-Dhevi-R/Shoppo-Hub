@@ -27,3 +27,11 @@ python -m server.app
 Open <http://127.0.0.1:5000>. The Python server creates `server/shophub.sqlite3` when it initializes the account and order database. This local database stores password hashes, order items, and customer delivery details; the SQLite file is ignored by Git. Cart and wishlist items stay in browser localStorage. A checkout draft is kept in the current tab while a shopper signs in or retries an order.
 
 Orders require a signed-in account. Checkout retries reuse a request key tied to the order details so a lost response does not create a second order. Changed details require an explicit new-order attempt. This demo does not process payments.
+
+## Deploy the full app on Render
+
+The repository includes a `render.yaml` Blueprint for deploying the Flask app and storefront together. In Render, create a new Blueprint Instance, connect this repository, and select the `render.yaml` file. Render will build the app, start Gunicorn, and check `/api/health` after deployment. The deployed service serves both the website and its `/api/...` endpoints from the same origin.
+
+The Blueprint attaches a 1 GB persistent disk and stores the SQLite database at `/var/data/shophub.sqlite3`, preserving accounts and orders across restarts and deploys. Persistent storage requires a paid Render service plan and may incur charges; review the plan and price in Render before creating the service. The app is configured to set secure session cookies over HTTPS.
+
+GitHub stores the source code, but GitHub Pages cannot run the Flask backend. Publishing this full-stack app through Pages alone would leave sign-in and checkout unavailable.

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from flask import Flask, abort, jsonify, send_from_directory
@@ -15,9 +16,16 @@ STATIC_EXTENSIONS = {".html", ".css", ".js", ".png", ".jpg", ".jpeg", ".webp", "
 
 def create_app(config: dict | None = None) -> Flask:
     app = Flask(__name__)
+    default_database = Path(__file__).resolve().with_name("shophub.sqlite3")
+    cookie_secure = os.environ.get("COOKIE_SECURE", "false").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
     app.config.from_mapping(
-        DATABASE=str(Path(__file__).resolve().with_name("shophub.sqlite3")),
-        COOKIE_SECURE=False,
+        DATABASE=os.environ.get("DATABASE_PATH", str(default_database)),
+        COOKIE_SECURE=cookie_secure,
     )
     if config:
         app.config.update(config)
@@ -50,4 +58,9 @@ def create_app(config: dict | None = None) -> Flask:
 
 
 if __name__ == "__main__":
-    create_app().run(host="127.0.0.1", port=5000, debug=False)
+    app = create_app()
+    app.run(
+        host=os.environ.get("HOST", "127.0.0.1"),
+        port=int(os.environ.get("PORT", "5000")),
+        debug=False,
+    )

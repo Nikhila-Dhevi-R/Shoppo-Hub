@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: shoppo-hub
+    runtime: python
+    plan: 0.5c-512mb
+    buildCommand: pip install -r server/requirements.txt
+    startCommand: "gunicorn --bind 0.0.0.0:$PORT 'server.app:create_app()'"
+    healthCheckPath: /api/health
+    disk:
+      name: shophub-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: DATABASE_PATH
+        value: /var/data/shophub.sqlite3
+      - key: COOKIE_SECURE
+        value: "true"
