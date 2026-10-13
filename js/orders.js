@@ -66,14 +66,22 @@
         });
     }
 
+    let loadGeneration = 0;
+
     async function loadOrders() {
+        const generation = ++loadGeneration;
+        container.replaceChildren();
+        status.textContent = "";
+        status.classList.remove("is-error");
         try {
             const user = await window.shopStore.currentUser();
+            if (generation !== loadGeneration) return;
             if (!user) {
                 window.location.replace("login.html?next=orders.html");
                 return;
             }
             const orders = await window.shopStore.listOrders();
+            if (generation !== loadGeneration) return;
             status.textContent = "";
             if (orders.length === 0) {
                 renderEmpty();
@@ -81,6 +89,7 @@
             }
             renderOrders(orders.slice().reverse());
         } catch (error) {
+            if (generation !== loadGeneration) return;
             if (error.code === "AUTH_REQUIRED") {
                 window.location.replace("login.html?next=orders.html");
                 return;
@@ -89,6 +98,10 @@
             status.classList.add("is-error");
         }
     }
+
+    window.addEventListener("storage", (event) => {
+        if (event.key === "shophub.active-profile.v1") loadOrders();
+    });
 
     loadOrders();
 })();

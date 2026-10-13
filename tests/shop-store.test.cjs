@@ -52,6 +52,58 @@ test("normalizesEmailAndStoresOnlySaltedPasswordHash", async () => {
     assert.equal(await store.currentUser(), null);
 });
 
+test("preservesBothProfilesWhenRegistrationsOverlap", async () => {
+    const { storage, store } = makeStore();
+
+    await Promise.all([
+        store.register({ name: "Ava Shopper", email: "ava@example.com", password: "correct horse battery" }),
+        store.register({ name: "Lee Shopper", email: "lee@example.com", password: "another secure password" })
+    ]);
+
+    const profiles = JSON.parse(storage.getItem("shophub.profiles.v1"));
+    assert.deepEqual(profiles.map((profile) => profile.email).sort(), ["ava@example.com", "lee@example.com"]);
+});
+
+test("rejectsConcurrentRegistrationForTheSameNormalizedEmail", async () => {
+    const { storage, store } = makeStore();
+
+    const outcomes = await Promise.allSettled([
+        store.register({ name: "Ava Shopper", email: "ava@example.com", password: "correct horse battery" }),
+        store.register({ name: "Another Ava", email: " AVA@EXAMPLE.COM ", password: "another secure password" })
+    ]);
+
+    assert.equal(outcomes.filter((outcome) => outcome.status === "fulfilled").length, 1);
+    assert.equal(outcomes.filter((outcome) => outcome.status === "rejected" && outcome.reason.code === "EMAIL_EXISTS").length, 1);
+    assert.equal(JSON.parse(storage.getItem("shophub.profiles.v1")).length, 1);
+});
+
+test("serializesProfileWritesAcrossStoresSharingBrowserStorage", async () => {
+    let tail = Promise.resolve();
+    const lockNames = [];
+    const locks = {
+        request(name, _options, callback) {
+            lockNames.push(name);
+            const result = tail.then(callback);
+            tail = result.catch(() => {});
+            return result;
+        }
+    };
+    const storage = createMemoryStorage();
+    const firstStore = createShopStore({ storage, crypto: webcrypto, locks });
+    const secondStore = createShopStore({ storage, crypto: webcrypto, locks });
+
+    await Promise.all([
+        firstStore.register({ name: "Ava Shopper", email: "ava@example.com", password: "correct horse battery" }),
+        secondStore.register({ name: "Lee Shopper", email: "lee@example.com", password: "another secure password" })
+    ]);
+
+    assert.equal(lockNames.length, 2);
+    assert.deepEqual(
+        JSON.parse(storage.getItem("shophub.profiles.v1")).map((profile) => profile.email).sort(),
+        ["ava@example.com", "lee@example.com"]
+    );
+});
+
 test("rejectsDuplicateEmailAndWrongPassword", async () => {
     const { store } = makeStore();
     await store.register({ name: "Ava", email: "ava@example.com", password: "correct horse battery" });
@@ -117,6 +169,25 @@ test("isolatesOrdersAndSnapshotsCatalogPrices", async () => {
 
     await store.login({ email: "ava@example.com", password: "correct horse battery" });
     assert.deepEqual(await store.listOrders(), [first]);
+});
+
+test("rejectsOrderWhenActiveProfileDiffersFromCheckoutProfile", async () => {
+    const { store } = makeStore();
+    await store.register({ name: "Ava", email: "ava@example.com", password: "correct horse battery" });
+    const ava = await store.login({ email: "ava@example.com", password: "correct horse battery" });
+    await store.register({ name: "Lee", email: "lee@example.com", password: "another secure password" });
+    await store.login({ email: "lee@example.com", password: "another secure password" });
+
+    await assert.rejects(
+        store.placeOrder({
+            items: [{ id: 1, quantity: 1 }],
+            delivery: { name: "Ava Shopper", address: "12 Peach Lane, Pune", phone: "9876543210" },
+            attemptKey: "attempt-profile-check-1",
+            expectedProfileId: ava.id
+        }, PRODUCTS),
+        (error) => error.code === "PROFILE_CHANGED"
+    );
+    assert.deepEqual(await store.listOrders(), []);
 });
 
 test("replaysMatchingAttemptAndRejectsChangedPayload", async () => {

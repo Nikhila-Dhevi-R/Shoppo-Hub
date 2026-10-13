@@ -6,7 +6,7 @@
     root.createShopStore = api.createShopStore;
     let storage = null;
     try { storage = root.localStorage; } catch (_error) { /* The store reports blocked storage inline. */ }
-    root.shopStore = api.createShopStore({ storage, crypto: root.crypto });
+    root.shopStore = api.createShopStore({ storage, crypto: root.crypto, locks: root.navigator && root.navigator.locks });
 })(typeof window === "object" ? window : null, function createShopStoreModule() {
     "use strict";
 
@@ -76,7 +76,7 @@
             typeof order.attemptKey === "string" && typeof order.payloadFingerprint === "string";
     }
 
-    function createShopStore({ storage, crypto } = {}) {
+    function createShopStore({ storage, crypto, locks } = {}) {
         function requireStorage() {
             if (!storage || typeof storage.getItem !== "function" || typeof storage.setItem !== "function" || typeof storage.removeItem !== "function") {
                 fail("STORAGE_UNAVAILABLE", "Browser storage is unavailable. Enable storage and try again.");
@@ -259,8 +259,21 @@
                     credential: { algorithm: "PBKDF2-SHA-256", iterations: PASSWORD_ITERATIONS, salt, hash },
                     created_at: new Date().toISOString()
                 };
-                writeJson(PROFILE_KEY, [...profiles, profile]);
-                return safeProfile(profile);
+                const saveProfile = () => {
+                    const latestProfiles = readProfiles();
+                    if (latestProfiles.some((candidate) => candidate.email === normalizedEmail)) {
+                        fail("EMAIL_EXISTS", "An account already uses this email address. Log in instead.");
+                    }
+                    writeJson(PROFILE_KEY, [...latestProfiles, profile]);
+                    return safeProfile(profile);
+                };
+                if (!locks || typeof locks.request !== "function") return saveProfile();
+                try {
+                    return await locks.request("shophub.profiles.register.v1", { mode: "exclusive" }, saveProfile);
+                } catch (error) {
+                    if (error instanceof ShopStoreError) throw error;
+                    fail("STORAGE_UNAVAILABLE", "Browser profiles could not be updated safely. Try again.");
+                }
             },
 
             async login({ email, password } = {}) {
@@ -299,9 +312,12 @@
                 return readOrders(profile.id).map(safeOrder);
             },
 
-            async placeOrder({ items, delivery, attemptKey } = {}, products) {
+            async placeOrder({ items, delivery, attemptKey, expectedProfileId } = {}, products) {
                 const profile = getCurrentProfile();
                 if (!profile) fail("AUTH_REQUIRED", "Log in before placing an order.");
+                if (expectedProfileId !== undefined && expectedProfileId !== profile.id) {
+                    fail("PROFILE_CHANGED", "Your signed-in profile changed. Review your details and try again.");
+                }
                 if (typeof attemptKey !== "string" || attemptKey.length < 8 || attemptKey.length > 128) {
                     fail("INVALID_ORDER", "This checkout attempt is invalid. Start a new order and try again.");
                 }

@@ -34,6 +34,30 @@
         }
     }
 
+    function readCartForCheckout() {
+        let raw;
+        try {
+            raw = localStorage.getItem("cart");
+        } catch (_error) {
+            return { items: [], error: "Your cart could not be read. Keep this page open and try again." };
+        }
+        if (raw === null) return { items: [], error: null };
+
+        let ids;
+        try {
+            ids = JSON.parse(raw);
+        } catch (_error) {
+            return { items: [], error: "Your cart data is unreadable. Review your cart before checking out." };
+        }
+        if (!Array.isArray(ids) || ids.some((id) => !Number.isInteger(id) || !byId.has(id))) {
+            return { items: [], error: "Your cart contains an unavailable item. Review your cart before checking out." };
+        }
+
+        const quantities = new Map();
+        ids.forEach((id) => quantities.set(id, (quantities.get(id) || 0) + 1));
+        return { items: [...quantities].map(([id, quantity]) => ({ id, quantity })), error: null };
+    }
+
     function writeIds(key, ids) {
         localStorage.setItem(key, JSON.stringify(ids));
         if (key === "cart") {
@@ -88,7 +112,7 @@
         }
     }
 
-    window.shopCatalog = { products, byId, readIds, writeIds, formatPrice, checkoutKeyName };
+    window.shopCatalog = { products, byId, readIds, readCartForCheckout, writeIds, formatPrice, checkoutKeyName };
     window.addToCart = addToCart;
     window.addWishlist = addWishlist;
     window.showShopToast = showToast;

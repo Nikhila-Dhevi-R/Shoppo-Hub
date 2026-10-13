@@ -56,9 +56,17 @@
     }
 
     function orderItems() {
-        const quantities = new Map();
-        catalog.readIds("cart").forEach((id) => quantities.set(id, (quantities.get(id) || 0) + 1));
-        return [...quantities].map(([id, quantity]) => ({ id, quantity }));
+        return catalog.readCartForCheckout();
+    }
+
+    function clearCheckoutIdentity() {
+        activeProfileId = null;
+        activeRequestKey = null;
+        activeDraftKey = null;
+        submitButton.disabled = true;
+        if (newOrderAttemptButton) newOrderAttemptButton.hidden = true;
+        Object.values(fields).forEach((input) => { input.value = ""; });
+        setStatus("Your signed-in profile changed. Sign in again to continue checkout.");
     }
 
     function createRequestKey() {
@@ -82,7 +90,7 @@
         if (activeRequestKey) return activeRequestKey;
         try {
             const existing = sessionStorage.getItem(catalog.checkoutKeyName);
-            if (existing) {
+            if (typeof existing === "string" && existing.length >= 8 && existing.length <= 128) {
                 activeRequestKey = existing;
                 return activeRequestKey;
             }
@@ -118,9 +126,18 @@
 
     async function initialize() {
         submitButton.disabled = true;
-        const items = orderItems();
-        renderSummary(items);
-        if (!items.length) {
+        const cart = orderItems();
+        renderSummary(cart.items);
+        if (cart.error) {
+            setStatus(cart.error);
+            if (emptyCartLink) {
+                emptyCartLink.href = "cart.html";
+                emptyCartLink.textContent = "Review your cart";
+                emptyCartLink.hidden = false;
+            }
+            return;
+        }
+        if (!cart.items.length) {
             form.hidden = true;
             if (summaryPanel) summaryPanel.hidden = true;
             if (emptyCartLink) emptyCartLink.hidden = false;
@@ -150,8 +167,8 @@
 
     if (newOrderAttemptButton) {
         newOrderAttemptButton.addEventListener("click", () => {
-            activeRequestKey = null;
-            try { sessionStorage.removeItem(activeRequestStorageKey); } catch (_error) { /* Start the new attempt in memory. */ }
+            activeRequestKey = createRequestKey();
+            try { sessionStorage.setItem(activeRequestStorageKey, activeRequestKey); } catch (_error) { /* Retain this key in memory for the new attempt. */ }
             newOrderAttemptButton.hidden = true;
             submitButton.disabled = false;
             setStatus("Ready to place a separate order using these details.", "pending");
@@ -162,17 +179,41 @@
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
         if (!form.reportValidity()) return;
-        const items = orderItems();
+        const cart = orderItems();
+        if (cart.error) {
+            submitButton.disabled = true;
+            setStatus(cart.error);
+            if (emptyCartLink) {
+                emptyCartLink.href = "cart.html";
+                emptyCartLink.textContent = "Review your cart";
+                emptyCartLink.hidden = false;
+            }
+            return;
+        }
+        const items = cart.items;
         if (!items.length) {
             setStatus("Your cart is empty. Add a product before checking out.");
             return;
         }
 
-        saveDraft();
         if (!activeProfileId) {
             setStatus("Please sign in before placing your order.");
             return;
         }
+        let currentUser;
+        try {
+            currentUser = await window.shopStore.currentUser();
+        } catch (error) {
+            setStatus(error.message || "We could not check your account. Please try again.");
+            return;
+        }
+        if (!currentUser || currentUser.id !== activeProfileId) {
+            clearCheckoutIdentity();
+            window.location.assign("login.html?next=checkout.html");
+            return;
+        }
+
+        saveDraft();
         submitButton.disabled = true;
         setStatus("Saving your order…", "pending");
         let response;
@@ -185,11 +226,17 @@
                     address: fields.address.value.trim(),
                     phone: fields.phone.value.trim()
                 },
-                attemptKey: requestKey
+                attemptKey: requestKey,
+                expectedProfileId: activeProfileId
             }, catalog.products);
         } catch (error) {
             if (error.code === "AUTH_REQUIRED") {
                 saveDraft();
+                window.location.assign("login.html?next=checkout.html");
+                return;
+            }
+            if (error.code === "PROFILE_CHANGED") {
+                clearCheckoutIdentity();
                 window.location.assign("login.html?next=checkout.html");
                 return;
             }
@@ -230,6 +277,20 @@
             confirmationStep.setAttribute("aria-current", "step");
         }
         document.getElementById("successTitle").focus();
+    });
+
+    window.addEventListener("storage", async (event) => {
+        if (event.key !== "shophub.active-profile.v1" || !activeProfileId) return;
+        try {
+            const user = await window.shopStore.currentUser();
+            if (!user || user.id !== activeProfileId) {
+                clearCheckoutIdentity();
+                window.location.replace("login.html?next=checkout.html");
+            }
+        } catch (_error) {
+            clearCheckoutIdentity();
+            window.location.replace("login.html?next=checkout.html");
+        }
     });
 
     initialize();
