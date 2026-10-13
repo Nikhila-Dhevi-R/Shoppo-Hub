@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#fff0df">
+  <meta name="description" content="Find joyful everyday picks at ShopHub.">
+  <title>ShopHub | Little finds, brighter days</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header id="siteHeader"></header>
+  <main>
+    <section class="hero reveal" aria-labelledby="heroTitle">
+      <div class="hero-copy">
+        <p class="eyebrow">A LITTLE JOY, DELIVERED</p>
+        <h1 id="heroTitle">Find your sunny side.</h1>
+        <p>Meet feel-good favorites for your everyday. Thoughtful little upgrades, all in one happy place.</p>
+        <div class="hero-actions">
+          <a href="products.html" class="button-primary">Explore the shop <span aria-hidden="true">→</span></a>
+          <span class="hero-note">Good finds. Easy browsing.</span>
+        </div>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <div class="hero-orbit"></div>
+        <img class="hero-product-image" src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=700&auto=format&fit=crop&q=85" alt="">
+      </div>
+    </section>
+
+    <section class="featured-section" aria-labelledby="featuredTitle">
+      <div class="featured-head">
+        <div>
+          <p class="eyebrow">PICKED FOR YOU</p>
+          <h2 id="featuredTitle" class="section-heading">A few feel-good finds</h2>
+          <p class="section-intro">Start with a favorite, then make it yours.</p>
+        </div>
+        <a class="button-secondary" href="products.html">See everything <span aria-hidden="true">→</span></a>
+      </div>
+      <div class="product-grid">
+        <article class="product-card">
+          <img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=85" alt="Smart watch with a warm neutral strap" loading="lazy">
+          <h3>Smart Watch</h3><p class="product-price">₹4,999</p>
+          <button type="button" onclick="addToCart(1)">Add to cart</button>
+        </article>
+        <article class="product-card">
+          <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=85" alt="Over-ear headphones" loading="lazy">
+          <h3>Headphones</h3><p class="product-price">₹1,999</p>
+          <button type="button" onclick="addToCart(2)">Add to cart</button>
+        </article>
+        <article class="product-card">
+          <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop&q=85" alt="Bright red running shoe" loading="lazy">
+          <h3>Shoes</h3><p class="product-price">₹2,999</p>
+          <button type="button" onclick="addToCart(4)">Add to cart</button>
+        </article>
+      </div>
+    </section>
+  </main>
+  <footer id="siteFooter"></footer>
+  <script src="js/api.js"></script>
+  <script src="js/navbar.js"></script>
+  <script src="js/catalog.js"></script>
+</body>
+</html>

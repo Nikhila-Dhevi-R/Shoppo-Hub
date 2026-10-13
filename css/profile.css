@@ -1,0 +1,8 @@
+.profile-main { min-height: calc(100vh - 250px); display: grid; place-items: center; padding-top: 32px; padding-bottom: 60px; }
+.profile-card { width: min(100%, 660px); padding: clamp(25px, 6vw, 48px); border-radius: 30px; text-align: center; animation: rise-in .65s cubic-bezier(.2,.7,.2,1) both; }
+.profile-avatar { width: 76px; height: 76px; margin: 0 auto 16px; display: grid; place-items: center; border: 1px solid white; border-radius: 50%; background: linear-gradient(135deg, var(--yellow), #f5a067); color: #59371f; font-size: 2rem; box-shadow: var(--soft-shadow); }
+.profile-card h1 { margin: 0; font: 800 clamp(2rem, 6vw, 2.7rem)/1.1 'Manrope', sans-serif; letter-spacing: -.06em; }
+.profile-name { margin: 16px 0 2px; font: 750 1.3rem 'Manrope', sans-serif; }
+.profile-email { margin: 0; color: var(--ink-soft); }
+.profile-actions { margin-top: 25px; display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; }
+@media (max-width: 540px) { .profile-main { min-height: auto; }.profile-actions { flex-direction: column; }.profile-actions > * { width: 100%; } }

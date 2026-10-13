@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#fff0df">
+  <title>Create an account | ShopHub</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/auth.css">
+</head>
+<body class="auth-page">
+  <main class="auth-shell">
+    <a class="auth-brand" href="index.html" aria-label="ShopHub home">ShopHub<span aria-hidden="true">✦</span></a>
+    <section class="form-box glass-panel" aria-labelledby="signupTitle">
+      <p class="eyebrow">A LITTLE MORE JOY IN EVERYDAY</p>
+      <h1 id="signupTitle">Join ShopHub</h1>
+      <p class="auth-intro">Create an account to save your orders and favorites.</p>
+      <form id="signupForm" novalidate>
+        <label for="signupName">Full name</label>
+        <input type="text" id="signupName" name="name" autocomplete="name" placeholder="Your name" maxlength="120" required>
+        <label for="signupEmail">Email address</label>
+        <input type="email" id="signupEmail" name="email" autocomplete="email" placeholder="you@example.com" maxlength="254" required>
+        <label for="signupPassword">Password</label>
+        <input type="password" id="signupPassword" name="password" autocomplete="new-password" minlength="8" maxlength="256" placeholder="At least 8 characters" required>
+        <p id="signupStatus" class="form-status" role="status" aria-live="polite" aria-atomic="true"></p>
+        <button class="button-primary auth-submit" type="submit">Create account <span aria-hidden="true">→</span></button>
+      </form>
+      <p class="auth-switch">Already have an account? <a id="loginLink" href="login.html">Log in</a></p>
+    </section>
+    <a class="auth-back" href="index.html"><span aria-hidden="true">←</span> Back to the shop</a>
+  </main>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>

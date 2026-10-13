@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#fff0df">
+  <title>Checkout | ShopHub</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header id="siteHeader"></header>
+  <main class="page-shell checkout-main">
+    <header class="page-intro">
+      <p class="eyebrow">ALMOST YOURS</p>
+      <h1 class="section-heading">A few details, then done.</h1>
+      <p class="section-intro">Add your delivery details to place your order.</p>
+    </header>
+    <nav class="checkout-steps glass-panel" aria-label="Checkout progress">
+      <span class="checkout-step is-complete"><i>1</i> Your cart</span>
+      <span class="step-line" aria-hidden="true"></span>
+      <span class="checkout-step is-current" aria-current="step"><i>2</i> Delivery</span>
+      <span class="step-line" aria-hidden="true"></span>
+      <span class="checkout-step"><i>3</i> Confirmation</span>
+    </nav>
+    <div id="checkoutView" class="checkout-layout">
+      <section class="checkout-card glass-panel" aria-labelledby="deliveryTitle">
+        <p class="eyebrow">DELIVERY DETAILS</p>
+        <h2 id="deliveryTitle">Where should it go?</h2>
+        <p id="checkoutStatus" class="form-status" role="status" aria-live="polite" aria-atomic="true"></p>
+        <form id="checkoutForm" class="form-stack">
+          <label for="deliveryName">Full name</label>
+          <input id="deliveryName" name="name" type="text" autocomplete="name" maxlength="120" placeholder="Your full name" required>
+          <label for="deliveryAddress">Address</label>
+          <textarea id="deliveryAddress" name="address" autocomplete="street-address" minlength="5" maxlength="300" placeholder="House, street, area, city, PIN code" required></textarea>
+          <label for="deliveryPhone">Phone number</label>
+          <input id="deliveryPhone" name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="24" placeholder="+91 98765 43210" required>
+          <button id="placeOrderBtn" class="button-primary" type="submit">Place my order <span aria-hidden="true">→</span></button>
+          <button id="newOrderAttemptBtn" class="button-secondary" type="button" hidden>Start a new order with these details</button>
+        </form>
+        <a id="checkoutEmptyLink" class="button-secondary checkout-empty-link" href="products.html" hidden>Explore the shop</a>
+      </section>
+      <aside id="checkoutSummary" class="checkout-card checkout-summary glass-panel" aria-labelledby="summaryTitle">
+        <p class="eyebrow">YOUR HAPPY FINDS</p>
+        <h2 id="summaryTitle">Order summary</h2>
+        <div id="checkoutItems" class="checkout-items"></div>
+        <div class="checkout-total"><span>Total</span><strong id="checkoutTotal"></strong></div>
+        <p class="checkout-note">No payment is collected in this demo.</p>
+      </aside>
+    </div>
+    <section id="orderSuccess" class="order-success glass-panel" aria-labelledby="successTitle" hidden>
+      <div class="success-sparkle" aria-hidden="true">✦</div>
+      <p class="eyebrow">ALL SET</p>
+      <h2 id="successTitle" tabindex="-1">Order confirmed successfully!</h2>
+      <p>Thank you for shopping with ShopHub. We have saved your order.</p>
+      <dl class="success-details"><div><dt>Order reference</dt><dd id="orderReference"></dd></div><div><dt>Order total</dt><dd id="confirmedTotal"></dd></div></dl>
+      <div class="success-actions"><a class="button-primary" href="orders.html">View my orders</a><a class="button-secondary" href="products.html">Keep browsing</a></div>
+    </section>
+  </main>
+  <footer id="siteFooter"></footer>
+  <script src="js/api.js"></script>
+  <script src="js/navbar.js"></script>
+  <script src="js/catalog.js"></script>
+  <script src="js/checkout.js"></script>
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Products | ShopHub</title>
+
+    <link rel="stylesheet" href="../css/admin.css">
+</head>
+
+<body>
+
+<div class="sidebar">
+
+    <div>
+
+        <h2>ShopHub</h2>
+
+        <a href="dashboard.html">🏠 Dashboard</a>
+        <a href="products.html" class="active">🛍 Products</a>
+        <a href="orders.html">📦 Orders</a>
+        <a href="users.html">👥 Users</a>
+
+    </div>
+
+    <button id="logoutBtn" class="logout-btn">
+        Logout
+    </button>
+
+</div>
+
+<div class="main">
+
+<h1>Manage Products</h1>
+
+<div class="top-bar">
+
+<input
+type="text"
+id="search"
+placeholder="Search product...">
+
+<select id="categoryFilter">
+
+<option value="">All Categories</option>
+
+<option>Electronics</option>
+
+<option>Fashion</option>
+
+<option>Shoes</option>
+
+<option>Accessories</option>
+
+</select>
+
+</div>
+
+<div class="product-form">
+
+<input
+type="text"
+id="productName"
+placeholder="Product Name">
+
+<input
+type="number"
+id="productPrice"
+placeholder="Price">
+
+<input
+type="text"
+id="productCategory"
+placeholder="Category">
+
+<input
+type="text"
+id="productImage"
+placeholder="Image URL">
+
+<button id="addProduct">
+Add Product
+</button>
+
+</div>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>#</th>
+
+<th>Image</th>
+
+<th>Name</th>
+
+<th>Price</th>
+
+<th>Category</th>
+
+<th>Actions</th>
+
+</tr>
+
+</thead>
+
+<tbody id="productTable">
+
+</tbody>
+
+</table>
+
+</div>
+
+<script src="../js/products-admin.js"></script>
+
+</body>
+
+</html>

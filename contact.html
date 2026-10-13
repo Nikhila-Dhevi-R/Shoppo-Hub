@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#fff0df">
+  <title>Contact us | ShopHub</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header id="siteHeader"></header>
+  <main class="page-shell">
+    <header class="page-intro">
+      <p class="eyebrow">WE WOULD LOVE TO HEAR FROM YOU</p>
+      <h1 class="section-heading">Say hello</h1>
+      <p class="section-intro">Have a question or a little feedback? Drop us a note.</p>
+    </header>
+    <section class="contact-layout glass-panel reveal" aria-labelledby="contactHeading">
+      <div class="contact-copy">
+        <p class="eyebrow">HERE TO HELP</p>
+        <h2 id="contactHeading" class="section-heading">Let's make it easy.</h2>
+        <p>Send a message and our team will be glad to point you in the right direction.</p>
+        <a class="button-secondary" href="products.html">Back to the shop</a>
+      </div>
+      <form id="contactForm" class="contact-form">
+        <label for="contactName">Your name</label>
+        <input id="contactName" name="name" type="text" autocomplete="name" placeholder="Your name" required>
+        <label for="contactEmail">Email address</label>
+        <input id="contactEmail" name="email" type="email" autocomplete="email" placeholder="you@example.com" required>
+        <label for="contactMessage">Your message</label>
+        <textarea id="contactMessage" name="message" placeholder="How can we help?" required></textarea>
+        <p id="contactStatus" class="form-status" role="status" aria-live="polite"></p>
+        <button class="button-primary" type="submit">Send message <span aria-hidden="true">→</span></button>
+      </form>
+    </section>
+  </main>
+  <footer id="siteFooter"></footer>
+  <script src="js/api.js"></script>
+  <script src="js/navbar.js"></script>
+  <script>
+    document.getElementById("contactForm").addEventListener("submit", (event) => {
+      event.preventDefault();
+      document.getElementById("contactStatus").textContent = "Thanks for your note. We appreciate you getting in touch.";
+      document.getElementById("contactStatus").classList.add("is-success");
+      event.currentTarget.reset();
+    });
+  </script>
+</body>
+</html>
