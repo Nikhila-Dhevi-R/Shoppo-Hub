@@ -26,7 +26,7 @@ Open <http://127.0.0.1:8000>. The preview server serves only the generated `_sit
 
 ## Deploy on GitHub Pages
 
-The `Client-side-js-only` branch builds and deploys the storefront through the GitHub Actions workflow in `.github/workflows/pages.yml`. For the first deployment, open **Settings → Pages** in the repository and select **GitHub Actions** as the build and deployment source. Pushes to that branch run the workflow; the deployment URL appears in the workflow's `github-pages` environment.
+The `main` branch builds and deploys the storefront through the GitHub Actions workflow in `.github/workflows/pages.yml`. In the repository, open **Settings > Pages** and select **GitHub Actions** as the build and deployment source. Pushes to `main` run the workflow; the deployment URL appears in the workflow's `github-pages` environment.
 
 The expected project URL is <https://nikhila-dhevi-r.github.io/Shoppo-Hub/>.
 
