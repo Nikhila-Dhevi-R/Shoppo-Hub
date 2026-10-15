@@ -135,6 +135,26 @@ test("failsSafelyWithoutWebCryptoOrStorage", async () => {
     );
 });
 
+test("worksOnInsecureOriginsWithoutSubtleCrypto", async () => {
+    const storage = createMemoryStorage();
+    const httpCrypto = {
+        getRandomValues(bytes) {
+            return webcrypto.getRandomValues(bytes);
+        }
+    };
+    const store = createShopStore({ storage, crypto: httpCrypto });
+    const profile = await store.register({ name: "AWS User", email: "aws@example.com", password: "password1234" });
+    assert.equal(profile.email, "aws@example.com");
+
+    const loggedIn = await store.login({ email: "aws@example.com", password: "password1234" });
+    assert.equal(loggedIn.email, "aws@example.com");
+
+    await assert.rejects(
+        store.login({ email: "aws@example.com", password: "wrongpassword" }),
+        (error) => error.code === "INVALID_CREDENTIALS"
+    );
+});
+
 test("handlesMalformedStoredJsonWithoutErasingData", async () => {
     const corrupt = "{not valid json";
     const storage = createMemoryStorage({ "shophub.profiles.v1": corrupt });

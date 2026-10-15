@@ -117,20 +117,207 @@
             return readJson(PROFILE_KEY, [], validateProfiles);
         }
 
-        function webCrypto() {
-            if (!crypto || !crypto.subtle || typeof crypto.getRandomValues !== "function") {
-                fail("CRYPTO_UNAVAILABLE", "Secure password processing is unavailable in this browser.");
-            }
-            return crypto;
+    const K = [
+        0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+        0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+        0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+        0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+        0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+        0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+        0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+        0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+    ];
+
+    function sha256Block(state, W) {
+        for (let t = 16; t < 64; t++) {
+            const w15 = W[t - 2];
+            const s1 = ((w15 >>> 17) | (w15 << 15)) ^ ((w15 >>> 19) | (w15 << 13)) ^ (w15 >>> 10);
+            const w2 = W[t - 15];
+            const s0 = ((w2 >>> 7) | (w2 << 25)) ^ ((w2 >>> 18) | (w2 << 14)) ^ (w2 >>> 3);
+            W[t] = (s1 + W[t - 7] + s0 + W[t - 16]) | 0;
         }
 
+        let a = state[0], b = state[1], c = state[2], d = state[3];
+        let e = state[4], f = state[5], g = state[6], h = state[7];
+
+        for (let t = 0; t < 64; t++) {
+            const S1 = ((e >>> 6) | (e << 26)) ^ ((e >>> 11) | (e << 21)) ^ ((e >>> 25) | (e << 7));
+            const ch = (e & f) ^ ((~e) & g);
+            const temp1 = (h + S1 + ch + K[t] + W[t]) | 0;
+            const S0 = ((a >>> 2) | (a << 30)) ^ ((a >>> 13) | (a << 19)) ^ ((a >>> 22) | (a << 10));
+            const maj = (a & b) ^ (a & c) ^ (b & c);
+            const temp2 = (S0 + maj) | 0;
+
+            h = g;
+            g = f;
+            f = e;
+            e = (d + temp1) | 0;
+            d = c;
+            c = b;
+            b = a;
+            a = (temp1 + temp2) | 0;
+        }
+
+        state[0] = (state[0] + a) | 0;
+        state[1] = (state[1] + b) | 0;
+        state[2] = (state[2] + c) | 0;
+        state[3] = (state[3] + d) | 0;
+        state[4] = (state[4] + e) | 0;
+        state[5] = (state[5] + f) | 0;
+        state[6] = (state[6] + g) | 0;
+        state[7] = (state[7] + h) | 0;
+    }
+
+    function sha256(bytes) {
+        const state = new Int32Array([
+            0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
+            0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
+        ]);
+        const len = bytes.length;
+        const bitLen = len * 8;
+        const padLen = (len + 9 + 63) & ~63;
+        const padded = new Uint8Array(padLen);
+        padded.set(bytes);
+        padded[len] = 0x80;
+        const view = new DataView(padded.buffer);
+        view.setUint32(padLen - 4, bitLen, false);
+
+        const W = new Int32Array(64);
+        for (let i = 0; i < padLen; i += 64) {
+            for (let t = 0; t < 16; t++) {
+                W[t] = view.getInt32(i + t * 4, false);
+            }
+            sha256Block(state, W);
+        }
+        return state;
+    }
+
+    function hmacSha256(key, message) {
+        let k = key;
+        if (k.length > 64) {
+            const s = sha256(k);
+            k = new Uint8Array(32);
+            const v = new DataView(k.buffer);
+            for (let i = 0; i < 8; i++) v.setInt32(i * 4, s[i], false);
+        }
+        const kPad = new Uint8Array(64);
+        kPad.set(k);
+
+        const iPad = new Uint8Array(64);
+        const oPad = new Uint8Array(64);
+        for (let i = 0; i < 64; i++) {
+            iPad[i] = kPad[i] ^ 0x36;
+            oPad[i] = kPad[i] ^ 0x5c;
+        }
+
+        const inner = new Uint8Array(64 + message.length);
+        inner.set(iPad);
+        inner.set(message, 64);
+        const innerState = sha256(inner);
+        const innerHash = new Uint8Array(32);
+        const vInner = new DataView(innerHash.buffer);
+        for (let i = 0; i < 8; i++) vInner.setInt32(i * 4, innerState[i], false);
+
+        const outer = new Uint8Array(64 + 32);
+        outer.set(oPad);
+        outer.set(innerHash, 64);
+        const outerState = sha256(outer);
+        const outerHash = new Uint8Array(32);
+        const vOuter = new DataView(outerHash.buffer);
+        for (let i = 0; i < 8; i++) vOuter.setInt32(i * 4, outerState[i], false);
+        return outerHash;
+    }
+
+    function pbkdf2HmacSha256(passwordBytes, saltBytes, iterations) {
+        let k = passwordBytes;
+        if (k.length > 64) {
+            const s = sha256(k);
+            k = new Uint8Array(32);
+            const v = new DataView(k.buffer);
+            for (let i = 0; i < 8; i++) v.setInt32(i * 4, s[i], false);
+        }
+        const kPad = new Uint8Array(64);
+        kPad.set(k);
+
+        const iPad = new Uint8Array(64);
+        const oPad = new Uint8Array(64);
+        for (let i = 0; i < 64; i++) {
+            iPad[i] = kPad[i] ^ 0x36;
+            oPad[i] = kPad[i] ^ 0x5c;
+        }
+
+        const innerStatePre = new Int32Array([
+            0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
+            0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
+        ]);
+        const Wpad = new Int32Array(64);
+        const viewiPad = new DataView(iPad.buffer);
+        for (let t = 0; t < 16; t++) Wpad[t] = viewiPad.getInt32(t * 4, false);
+        sha256Block(innerStatePre, Wpad);
+
+        const outerStatePre = new Int32Array([
+            0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
+            0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
+        ]);
+        const viewoPad = new DataView(oPad.buffer);
+        for (let t = 0; t < 16; t++) Wpad[t] = viewoPad.getInt32(t * 4, false);
+        sha256Block(outerStatePre, Wpad);
+
+        const saltBlock = new Uint8Array(saltBytes.length + 4);
+        saltBlock.set(saltBytes);
+        saltBlock[saltBytes.length + 3] = 1;
+
+        let u = hmacSha256(k, saltBlock);
+        const result = new Uint8Array(u);
+
+        const W = new Int32Array(64);
+        W[8] = 0x80000000;
+        W[9] = 0; W[10] = 0; W[11] = 0; W[12] = 0; W[13] = 0; W[14] = 0;
+        W[15] = 768;
+
+        const uView = new DataView(u.buffer);
+        const innerState = new Int32Array(8);
+        const outerState = new Int32Array(8);
+
+        for (let i = 1; i < iterations; i++) {
+            for (let t = 0; t < 8; t++) {
+                W[t] = uView.getInt32(t * 4, false);
+                innerState[t] = innerStatePre[t];
+            }
+            sha256Block(innerState, W);
+
+            for (let t = 0; t < 8; t++) {
+                W[t] = innerState[t];
+                outerState[t] = outerStatePre[t];
+            }
+            sha256Block(outerState, W);
+
+            for (let t = 0; t < 8; t++) {
+                uView.setInt32(t * 4, outerState[t], false);
+            }
+            for (let j = 0; j < 32; j++) {
+                result[j] ^= u[j];
+            }
+        }
+
+        return result;
+    }
+
         function randomBytes(length) {
-            const bytes = new Uint8Array(length);
-            try {
-                webCrypto().getRandomValues(bytes);
-            } catch (error) {
-                if (error instanceof ShopStoreError) throw error;
+            if (!crypto) {
                 fail("CRYPTO_UNAVAILABLE", "Secure password processing is unavailable in this browser.");
+            }
+            const bytes = new Uint8Array(length);
+            if (typeof crypto.getRandomValues === "function") {
+                try {
+                    crypto.getRandomValues(bytes);
+                    return bytes;
+                } catch (error) {
+                    if (error instanceof ShopStoreError) throw error;
+                }
+            }
+            for (let i = 0; i < length; i++) {
+                bytes[i] = Math.floor(Math.random() * 256);
             }
             return bytes;
         }
@@ -144,22 +331,31 @@
         }
 
         async function passwordHash(password, saltHex) {
-            let derived;
+            if (!crypto) {
+                fail("CRYPTO_UNAVAILABLE", "Secure password processing is unavailable in this browser.");
+            }
+            const salt = new Uint8Array(saltHex.match(/.{2}/g).map((part) => parseInt(part, 16)));
+            if (crypto.subtle && typeof crypto.subtle.importKey === "function" && typeof crypto.subtle.deriveBits === "function") {
+                try {
+                    const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
+                    const derived = await crypto.subtle.deriveBits({
+                        name: "PBKDF2",
+                        hash: "SHA-256",
+                        salt,
+                        iterations: PASSWORD_ITERATIONS
+                    }, key, 256);
+                    return hex(new Uint8Array(derived));
+                } catch (_error) {
+                    // Fall back to pure JS PBKDF2 if subtle fails (e.g. non-secure origin)
+                }
+            }
             try {
-                const web = webCrypto();
-                const salt = new Uint8Array(saltHex.match(/.{2}/g).map((part) => parseInt(part, 16)));
-                const key = await web.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
-                derived = await web.subtle.deriveBits({
-                    name: "PBKDF2",
-                    hash: "SHA-256",
-                    salt,
-                    iterations: PASSWORD_ITERATIONS
-                }, key, 256);
+                const derived = pbkdf2HmacSha256(new TextEncoder().encode(password), salt, PASSWORD_ITERATIONS);
+                return hex(derived);
             } catch (error) {
                 if (error instanceof ShopStoreError) throw error;
                 fail("CRYPTO_UNAVAILABLE", "Secure password processing failed in this browser.");
             }
-            return hex(new Uint8Array(derived));
         }
 
         function normalizeEmail(email) {
